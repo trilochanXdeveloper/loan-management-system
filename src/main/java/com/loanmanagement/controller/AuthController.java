@@ -1,5 +1,6 @@
 package com.loanmanagement.controller;
 
+import com.loanmanagement.dto.request.RefreshTokenRequest;
 import com.loanmanagement.dto.request.UserLoginRequest;
 import com.loanmanagement.dto.request.UserRegisterRequest;
 import com.loanmanagement.dto.response.AuthResponse;
@@ -34,5 +35,15 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @PostMapping("/refresh-token")
+    public ResponseEntity<AuthResponse> refreshToken(
+            @Valid @RequestBody RefreshTokenRequest request){
+        return ResponseEntity.ok(authService.refreshToken(request));
+    }
 
+    @PostMapping("/logout/{userId}")
+    public ResponseEntity<String> logout(@PathVariable Long userId){
+        authService.logout(userId);
+        return ResponseEntity.ok("Logged out successfully");
+    }
 }
