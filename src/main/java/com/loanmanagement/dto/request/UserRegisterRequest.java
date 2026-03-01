@@ -3,7 +3,15 @@ package com.loanmanagement.dto.request;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 
+@Data
+@RequiredArgsConstructor
+@AllArgsConstructor
+@Builder
 public class UserRegisterRequest {
 
     @NotBlank(message = "Name is required")
