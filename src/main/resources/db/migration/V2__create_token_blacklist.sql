@@ -1,0 +1,6 @@
+CREATE TABLE token_blacklist(
+    id BIGSERIAL PRIMARY KEY ,
+    token VARCHAR(512) NOT NULL UNIQUE ,
+    expiry_date TIMESTAMP NOT NULL ,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

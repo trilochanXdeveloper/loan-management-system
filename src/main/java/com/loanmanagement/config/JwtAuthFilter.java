@@ -1,5 +1,6 @@
 package com.loanmanagement.config;
 
+import com.loanmanagement.service.TokenBlacklistService;
 import com.loanmanagement.util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,6 +22,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -38,6 +40,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         userEmail = jwtUtil.extractEmail(jwtToken);
 
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            if (tokenBlacklistService.isBlacklisted(jwtToken)){
+                response.setStatus(
+                        HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter()
+                        .write("Token has been invalidated. "+
+                                "Please login again");
+                return;
+            }
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
 
             if (jwtUtil.isTokenValid(jwtToken, userDetails.getUsername())) {

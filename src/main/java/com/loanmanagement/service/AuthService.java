@@ -1,4 +1,4 @@
-package com.loanmanagement.service.impl;
+package com.loanmanagement.service;
 
 import com.loanmanagement.dto.request.RefreshTokenRequest;
 import com.loanmanagement.dto.request.UserLoginRequest;
@@ -10,5 +10,5 @@ public interface AuthService {
     UserResponse register(UserRegisterRequest request);
     AuthResponse login(UserLoginRequest request);
     AuthResponse refreshToken(RefreshTokenRequest request);
-    void logout(Long userId);
+    void logout(String token, Long userId);
 }

@@ -13,6 +13,7 @@ import com.loanmanagement.exception.BusinessException;
 import com.loanmanagement.exception.ResourceNotFoundException;
 import com.loanmanagement.repository.RefreshTokenRepository;
 import com.loanmanagement.repository.UserRepository;
+import com.loanmanagement.service.AuthService;
 import com.loanmanagement.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -134,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void logout(Long userId) {
+    public void logout(String token, Long userId) {
         refreshTokenRepository.deleteByUserId(userId);
     }
 

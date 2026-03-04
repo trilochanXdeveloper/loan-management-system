@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +58,13 @@ public class JwtUtil {
     public String extractEmail(String token) {
         return extractAllClaims(token)
                 .getSubject();
+    }
+
+    public LocalDateTime extractExpiration(String token){
+        Date expiration = extractAllClaims(token).getExpiration();
+        return expiration.toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
     }
 
     //Extract Role from Token

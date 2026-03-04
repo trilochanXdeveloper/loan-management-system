@@ -5,7 +5,12 @@ import com.loanmanagement.dto.request.UserLoginRequest;
 import com.loanmanagement.dto.request.UserRegisterRequest;
 import com.loanmanagement.dto.response.AuthResponse;
 import com.loanmanagement.dto.response.UserResponse;
-import com.loanmanagement.service.impl.AuthService;
+import com.loanmanagement.entity.User;
+import com.loanmanagement.exception.ResourceNotFoundException;
+import com.loanmanagement.repository.UserRepository;
+import com.loanmanagement.service.AuthService;
+import com.loanmanagement.util.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +23,8 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
 
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(
@@ -41,9 +48,20 @@ public class AuthController {
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 
-    @PostMapping("/logout/{userId}")
-    public ResponseEntity<String> logout(@PathVariable Long userId){
-        authService.logout(userId);
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletRequest request){
+
+        // Extract token from header
+        String authHeader = request.getHeader("Authorization");
+        String token = authHeader.substring(7);
+
+        // Get user id from token
+        String email = jwtUtil.extractEmail(token);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "User not found"));
+
+        authService.logout(token, user.getId());
         return ResponseEntity.ok("Logged out successfully");
     }
 }
