@@ -15,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -26,28 +27,44 @@ public class AuthController {
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
+    // Customer Register
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(
             @Valid @RequestBody UserRegisterRequest request) {
 
         return new ResponseEntity<>(
-                authService.register(request),
+                authService.registerCustomer(request),
+                HttpStatus.CREATED
+        );
+    }
+    // Manager Register
+    // Only existing MANAGER can create new manager
+    @PostMapping("/register/manager")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<UserResponse> registerManager(
+            @Valid @RequestBody UserRegisterRequest request
+    ){
+        return new ResponseEntity<>(
+                authService.registerManager(request),
                 HttpStatus.CREATED
         );
     }
 
+    // Login
     @PostMapping("login")
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody UserLoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    // Refresh Token
     @PostMapping("/refresh-token")
     public ResponseEntity<AuthResponse> refreshToken(
             @Valid @RequestBody RefreshTokenRequest request){
         return ResponseEntity.ok(authService.refreshToken(request));
     }
 
+    // Logout
     @PostMapping("/logout")
     public ResponseEntity<String> logout(HttpServletRequest request){
 

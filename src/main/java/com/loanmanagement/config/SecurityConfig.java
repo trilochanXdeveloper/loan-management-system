@@ -1,5 +1,8 @@
 package com.loanmanagement.config;
 
+import com.loanmanagement.config.oauth2.CustomOAuth2UserService;
+import com.loanmanagement.config.oauth2.OAuth2SuccessHandler;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +27,8 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final CustomUserDetailsService userDetailsService;
+    private final CustomOAuth2UserService customOAuth2UserService;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -31,24 +36,64 @@ public class SecurityConfig {
                 csrf(csrf -> csrf.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth ->
-                        auth.
-                                requestMatchers(
-                                        "/api/auth/**",
-                                        "/swagger-ui/**",
-                                        "/swagger-ui.html",
-                                        "/v3/api-docs/**"
-                                ).permitAll()
-                                .requestMatchers(
-                                        "/api/approvals/**"
-                                ).hasRole("MANAGER")
-                                .requestMatchers(
-                                        "/api/loans/apply"
-                                ).hasRole("CUSTOMER")
-                                .anyRequest().authenticated()
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(
+                                (request, response, authException) -> {
+                                    response.setStatus(
+                                            HttpServletResponse.SC_UNAUTHORIZED);
+                                    response.setContentType("application/json");
+                                    response.getWriter().write(
+                                            "{\"status\":401," +
+                                                    "\"error\":\"Unauthorized\"," +
+                                                    "\"message\":\"Authentication required. Please login first.\"}"
+                                    );
+                                }
+                        )
+                )
+                .authorizeHttpRequests(auth -> auth
+                        // Public endpoints
+                        .requestMatchers(
+                                "/api/auth/register",
+                                "/api/auth/login",
+                                "/api/auth/refresh-token",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/v3/api-docs/**",
+                                "/oauth2/authorization/**",
+                                "/login/oauth2/code/**"
+                        ).permitAll()
+
+                        // Manager only endpoints
+                        .requestMatchers(
+                                "/api/auth/register/manager",
+                                "/api/approvals/**"
+                        ).hasRole("MANAGER")
+
+                        // Customer only endpoints
+                        .requestMatchers(
+                                "/api/loans/apply"
+                        ).hasRole("CUSTOMER")
+
+                        // Any authenticated user
+                        .anyRequest().authenticated()
+                )
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                        .failureHandler((request, response, exception) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write(
+                                    "{\"status\":401," +
+                                            "\"error\":\"OAuth2 Failed\"," +
+                                            "\"message\":\"" +
+                                            exception.getMessage() + "\"}"
+                            );
+                        })
                 )
                 .authenticationProvider(authenticationProvider())
-
                 .addFilterBefore(
                         jwtAuthFilter,
                         UsernamePasswordAuthenticationFilter.class

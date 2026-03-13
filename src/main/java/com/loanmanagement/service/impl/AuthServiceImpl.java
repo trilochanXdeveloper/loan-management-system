@@ -14,6 +14,7 @@ import com.loanmanagement.exception.ResourceNotFoundException;
 import com.loanmanagement.repository.RefreshTokenRepository;
 import com.loanmanagement.repository.UserRepository;
 import com.loanmanagement.service.AuthService;
+import com.loanmanagement.service.TokenBlacklistService;
 import com.loanmanagement.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,15 +36,16 @@ public class AuthServiceImpl implements AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final TokenBlacklistService tokenBlacklistService;
     private final JwtUtil jwtUtil;
 
     @Value("${jwt.refresh-token-expiry}")
     private Long refreshTokenExpiry;
 
-    // Register
+    // Register Customer
     @Override
     @Transactional
-    public UserResponse register(UserRegisterRequest request) {
+    public UserResponse registerCustomer(UserRegisterRequest request) {
         // Check email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new BusinessException(
@@ -53,7 +55,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         //Build user
-        User user = User.builder()
+        User customer = User.builder()
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -63,9 +65,31 @@ public class AuthServiceImpl implements AuthService {
                 .isActive(true)
                 .build();
 
-        User savedUser = userRepository.save(user);
+        return mapToUserResponse(userRepository.save(customer));
+    }
 
-        return mapToUserResponse(savedUser);
+    // Register Manager
+    @Override
+    @Transactional
+    public UserResponse registerManager(UserRegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new BusinessException(
+                    "Email already registered: " + request.getEmail(),
+                    HttpStatus.CONFLICT
+            );
+        }
+
+        User manager = User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(Role.MANAGER)
+                .authProvider(AuthProvider.LOCAL)
+                .creditScore(900)
+                .isActive(true)
+                .build();
+
+        return mapToUserResponse(userRepository.save(manager));
     }
 
     // Login
@@ -79,6 +103,7 @@ public class AuthServiceImpl implements AuthService {
                         request.getPassword()
                 )
         );
+
         //fetch User
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -136,14 +161,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void logout(String token, Long userId) {
         refreshTokenRepository.deleteByUserId(userId);
+
+        tokenBlacklistService.blacklistToken(token);
     }
 
     // Helper — Create Refresh Token
     private String createRefreshToken(User user) {
 
-        // Delete existing refresh token if any
-        refreshTokenRepository.findByUserId(user.getId())
-                .ifPresent(refreshTokenRepository::delete);
+        // Delete existing refresh token first
+        refreshTokenRepository.deleteByUserId(user.getId()); // ← add this
+
+        // Flush to ensure delete committed before insert
+        refreshTokenRepository.flush(); // ← add this
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)

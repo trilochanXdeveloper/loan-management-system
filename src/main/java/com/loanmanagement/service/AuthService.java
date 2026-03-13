@@ -7,7 +7,8 @@ import com.loanmanagement.dto.response.AuthResponse;
 import com.loanmanagement.dto.response.UserResponse;
 
 public interface AuthService {
-    UserResponse register(UserRegisterRequest request);
+    UserResponse registerCustomer(UserRegisterRequest request);
+    UserResponse registerManager(UserRegisterRequest request);
     AuthResponse login(UserLoginRequest request);
     AuthResponse refreshToken(RefreshTokenRequest request);
     void logout(String token, Long userId);
