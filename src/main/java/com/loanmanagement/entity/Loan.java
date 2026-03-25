@@ -9,6 +9,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -54,7 +55,7 @@ public class Loan {
     private Approval approval;
 
     @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL)
-    private List<EmiSchedule> emiSchedules;
+    private List<EmiSchedule> emiSchedules = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

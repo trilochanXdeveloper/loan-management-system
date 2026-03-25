@@ -11,4 +11,5 @@ public class BusinessException extends CustomException{
     public BusinessException(String message, HttpStatus status) {
         super(message, status);
     }
+
 }

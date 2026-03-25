@@ -48,12 +48,12 @@ spring:
               - email
               - profile
               - openid
-#          github:
-#            client-id: ${GITHUB_CLIENT_ID}
-#            client-secret: ${GITHUB_CLIENT_SECRET}
-#            scope:
-#              - user:email
-#              - read:user
+  #          github:
+  #            client-id: ${GITHUB_CLIENT_ID}
+  #            client-secret: ${GITHUB_CLIENT_SECRET}
+  #            scope:
+  #              - user:email
+  #              - read:user
   # ========================
   # MAIL CONFIGURATION
   # ========================

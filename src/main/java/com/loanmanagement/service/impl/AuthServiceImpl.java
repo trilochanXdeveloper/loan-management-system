@@ -105,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse login(UserLoginRequest request) {
 
         // Find user
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmail(request.getEmail().toLowerCase())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with email: "
                                 + request.getEmail()));
