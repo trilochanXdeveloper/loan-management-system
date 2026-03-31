@@ -285,7 +285,7 @@ public class LoanServiceImpl implements LoanService {
                     HttpStatus.FORBIDDEN);
         }
 
-        // Only PENDING loans can be cancelled
+        // Only PENDING loans can be canceled
         if (loan.getStatus() != LoanStatus.PENDING) {
             throw new BusinessException(
                     "Only PENDING loans can be cancelled. "
@@ -361,7 +361,7 @@ public class LoanServiceImpl implements LoanService {
 
         // Date range only
         else if (fromDate != null && toDate != null) {
-            loans = loanRepository.findByLoanType(loanType);
+            loans = loanRepository.findByCreatedAtBetween(fromDate, toDate);
         }
 
         // No filters — all loans
