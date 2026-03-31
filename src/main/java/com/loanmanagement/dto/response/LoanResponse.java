@@ -17,14 +17,21 @@ import java.time.LocalDateTime;
 public class LoanResponse {
 
     private Long id;
-    private Long userId;
-    private String userName;
-    private BigDecimal loanAmount;
     private LoanType loanType;
+    private BigDecimal loanAmount;
     private BigDecimal interestRate;
     private BigDecimal processingFee;
     private Integer tenureMonths;
-    private String collateralDetails;
     private LoanStatus status;
-    private LocalDateTime createdAt;
+    private String purpose;
+    private String collateralDetails;
+
+    // Applicant info
+    private Long applicantId;
+    private String applicantName;
+    private String applicantEmail;
+
+    private LocalDateTime appliedAt;
+    private LocalDateTime updateAt;
+
 }

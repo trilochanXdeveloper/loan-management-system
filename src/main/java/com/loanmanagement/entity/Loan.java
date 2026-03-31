@@ -57,6 +57,9 @@ public class Loan {
     @OneToMany(mappedBy = "loan", cascade = CascadeType.ALL)
     private List<EmiSchedule> emiSchedules = new ArrayList<>();
 
+    @Column(length = 500)
+    private String purpose;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 

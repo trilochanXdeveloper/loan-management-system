@@ -1,0 +1,2 @@
+ALTER TABLE loans
+    ADD COLUMN purpose VARCHAR(500);
