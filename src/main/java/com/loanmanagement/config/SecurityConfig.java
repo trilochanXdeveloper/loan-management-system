@@ -49,7 +49,19 @@ public class SecurityConfig {
                                     );
                                 }
                         )
+                        .accessDeniedHandler(
+                                (request, response, accessDeniedException) -> {
+                                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                    response.setContentType("application/json");
+                                    response.getWriter().write(
+                                            "{\"status\":403," +
+                                                    "\"error\":\"Forbidden\"," +
+                                                    "\"message\":\"You don't have permission to access this resource.\"}"
+                                    );
+                                }
+                        )
                 )
+
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers(
@@ -63,16 +75,16 @@ public class SecurityConfig {
                                 "/login/oauth2/code/**"
                         ).permitAll()
 
-                        // Manager only endpoints
-                        .requestMatchers(
-                                "/api/auth/register/manager",
-                                "/api/approvals/**"
-                        ).hasRole("MANAGER")
-
-                        // Customer only endpoints
-                        .requestMatchers(
-                                "/api/loans/apply"
-                        ).hasRole("CUSTOMER")
+//                        // Manager only endpoints
+//                        .requestMatchers(
+//                                "/api/auth/register/manager",
+//                                "/api/approvals/**"
+//                        ).hasRole("MANAGER")
+//                                                            // Not Needed, Keep only in EndPoint level with @PreAuthrized, if both present it may created conflict.
+//                        // Customer only endpoints
+//                        .requestMatchers(
+//                                "/api/loans/apply"
+//                        ).hasRole("CUSTOMER")
 
                         // Any authenticated user
                         .anyRequest().authenticated()
