@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Tag(name = "Loan Management",
         description = "Apply, Check eligibility, " +
-                "View, Cancel, Manager operations")
+                "View, Cancel, Manager operations(eg: Foreclose,view All Loans, etc..")
 public class LoanController {
 
     private final LoanService loanService;
@@ -116,24 +116,21 @@ public class LoanController {
                 loanService.getAllLoans(status, loanType, from, to));
     }
 
+    // PATCH /api/loans/{id}/foreclose
+    @Operation(summary = "Foreclose loan — MANAGER only",
+            description = "Only APPROVED loans can be foreclosed")
+    @PatchMapping("/{id}/foreclose")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<LoanResponse> forecloseLoan(
+            @PathVariable Long id){
+        return ResponseEntity.ok(loanService.forecloseLoan(id));
+    }
+
     //GET /api/loans/stats
     @Operation(summary = "Get loan statistics — MANAGER only")
     @GetMapping("/stats")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LoanStatsResponse> getLoanStats() {
         return ResponseEntity.ok(loanService.getLoanStats());
-    }
-
-    //PATCH /api/loans/{id}/status?status=
-    @Operation(summary = "Update loan status — MANAGER only",
-            description = "Status transitions: " +
-                    "PENDING→UNDER_REVIEW→APPROVED/REJECTED")
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<LoanResponse> updateLoanStatus(
-            @PathVariable Long id,
-            @RequestParam String status) {
-        return ResponseEntity.ok(
-                loanService.updateLoanStatus(id, status));
     }
 }

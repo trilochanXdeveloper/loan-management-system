@@ -140,15 +140,13 @@ public class LoanServiceImpl implements LoanService {
     public LoanEligibilityResponse checkEligibility(LoanRequest request) {
         User user = getCurrentUser();
 
+        String kycErr = checkKyc(user);
+
         // KYC check
-        if (user.getPhone() == null
-                || user.getDateOfBirth() == null
-                || user.getAddresses() == null) {
+        if (kycErr != null) {
             return LoanEligibilityResponse.builder()
                     .eligible(false)
-                    .message("Complete your profile first — "
-                            + "phone, date of birth and "
-                            + "address required.")
+                    .message(kycErr)
                     .build();
         }
 
@@ -253,7 +251,8 @@ public class LoanServiceImpl implements LoanService {
         if (loan.getStatus() != LoanStatus.COLLATERAL_REQUIRED) {
             throw new BusinessException(
                     "Collateral can only be submitted when "
-                            + "loan status is COLLATERAL_REQUIRED.",
+                            + "loan status is COLLATERAL_REQUIRED."
+                            + "Current status: " + loan.getStatus(),
                     HttpStatus.BAD_REQUEST);
         }
 
@@ -378,26 +377,29 @@ public class LoanServiceImpl implements LoanService {
                 .toList();
     }
 
-
     // ========================
-    // Update Loan Status
-    // (Manager)
+    // Foreclose Loan (Manager)
+    // APPROVED → FORECLOSED only
     // ========================
     @Override
     @Transactional
-    public LoanResponse updateLoanStatus(Long id, String status) {
+    public LoanResponse forecloseLoan(Long id) {
         Loan loan = findLoanById(id);
-        LoanStatus newStatus = parseLoanStatus(status);
 
-        validateStatusTransition(loan.getStatus(), newStatus);
+        if (loan.getStatus() != LoanStatus.APPROVED) {
+            throw new BusinessException(
+                    "Only APPROVED loans can be foreclosed. "
+                            + "Current status: " + loan.getStatus(),
+                    HttpStatus.BAD_REQUEST);
+        }
 
-        loan.setStatus(newStatus);
+        loan.setStatus(LoanStatus.FORECLOSED);
         Loan updated = loanRepository.save(loan);
 
-        log.info("Loan status updated: loanId={}, {} -> {}",
-                id, loan.getStatus(), newStatus);
+        log.info("Loan foreclosed: loanId={}", id);
         return mapToLoanResponse(updated);
     }
+
 
     // ========================
     // Loan Stats (Manager)
@@ -446,35 +448,77 @@ public class LoanServiceImpl implements LoanService {
                 .build();
     }
 
+    // ── Check Helpers (return String or null) ─────────────
+
+    // ========================
+    // Check Kyc
+    // ========================
+    private String checkKyc(User user) {
+        if (user.getPhone() == null
+                || user.getDateOfBirth() == null
+                || user.getAddresses().isEmpty()) {
+            return "Complete your profile before applying. "
+                    + "Phone, date of birth and address required.";
+        }
+        return null;
+    }
+
+    // ========================
+    // Check Credit Score
+    // ========================
+    private String checkCreditScore(
+            User user, LoanType loanType) {
+        int minScore = MIN_CREDIT_SCORE.get(loanType);
+
+        if (user.getCreditScore() < minScore) {
+            return "Credit score too low for "
+                    + loanType.name()
+                    + ". Required: " + minScore
+                    + ", Your score: "
+                    + user.getCreditScore();
+        }
+        return null;
+    }
+
+    // ========================
+    // Check Active Loan
+    // ========================
+    private String checkActiveLoanLimit(User user) {
+        long activeLoans = loanRepository
+                .countByUserIdAndStatus(user.getId(), LoanStatus.APPROVED);
+
+        if (activeLoans >= MAX_ACTIVE_LOANS) {
+            return "Maximum active loan limit reached ("
+                    + MAX_ACTIVE_LOANS + " loans). "
+                    + "Please close existing loans first.";
+        }
+        return null;
+    }
+
+
+    // ── Validate Helpers (throw exception) ───────────────
 
     // ========================
     // Helper — Validate KYC
     // ========================
     private void validateKyc(User user) {
-        if (user.getPhone() == null
-                || user.getDateOfBirth() == null
-                || user.getAddresses().isEmpty()) {
+        String error = checkKyc(user);
+        if (error != null) {
             throw new BusinessException(
-                    "Complete your profile before applying. "
-                            + "Phone, date of birth and address required.",
+                    error,
                     HttpStatus.BAD_REQUEST);
         }
     }
-
 
     // ========================
     // Helper — Credit Score
     // ========================
     private void validateCreditScore(
             User user, LoanType loanType) {
-        Integer minScore = MIN_CREDIT_SCORE.get(loanType);
-        if (user.getCreditScore() < minScore) {
+        String error = checkCreditScore(user, loanType);
+        if (error != null) {
             throw new BusinessException(
-                    "Credit score too low for "
-                            + loanType.name()
-                            + ". Required: " + minScore
-                            + ", Your score: "
-                            + user.getCreditScore(),
+                    error,
                     HttpStatus.BAD_REQUEST);
         }
     }
@@ -483,19 +527,16 @@ public class LoanServiceImpl implements LoanService {
     // Helper — Active Loans
     // ========================
     private void validateActiveLoanLimit(User user) {
-        long activeLoans = loanRepository
-                .countByUserIdAndStatus(
-                        user.getId(), LoanStatus.APPROVED);
+        String error = checkActiveLoanLimit(user);
 
-        if (activeLoans >= MAX_ACTIVE_LOANS) {
+        if (error != null) {
             throw new BusinessException(
-                    "Maximum active loan limit reached ("
-                            + MAX_ACTIVE_LOANS + " loans). "
-                            + "Please close existing loans first.",
+                    error,
                     HttpStatus.BAD_REQUEST);
         }
-
     }
+
+    // ── Calculation Helpers ───────────────────────────────
 
     // ========================
     // Helper — Processing Fee
@@ -520,39 +561,13 @@ public class LoanServiceImpl implements LoanService {
         double multiplier;
         if (creditScore >= 800) multiplier = 1.00;
         else if (creditScore >= 750) multiplier = 0.90;
-        else if (creditScore > 700) multiplier = 0.75;
+        else if (creditScore >= 700) multiplier = 0.75;
         else multiplier = 0.60;
 
         return baseMax.multiply(BigDecimal.valueOf(multiplier))
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    // ========================
-    // Helper — Status Transition
-    // ========================
-    private void validateStatusTransition(
-            LoanStatus current, LoanStatus next) {
-        boolean valid = switch (current) {
-            case PENDING -> next == LoanStatus.UNDER_REVIEW
-                    || next == LoanStatus.CANCELLED;
-            case UNDER_REVIEW -> next == LoanStatus.APPROVED
-                    || next == LoanStatus.REJECTED
-                    || next == LoanStatus.COLLATERAL_REQUIRED;
-            case COLLATERAL_REQUIRED -> next == LoanStatus.APPROVED
-                    || next == LoanStatus.COLLATERAL_REQUIRED;
-            case APPROVED -> next == LoanStatus.FORECLOSED;
-            case REJECTED, FORECLOSED, CANCELLED -> false;
-        };
-
-        if (!valid) {
-            throw new BusinessException(
-                    "Invalid status transition: "
-                            + current + " → " + next
-                            + ". Valid transitions: "
-                            + getValidTransitions(current),
-                    HttpStatus.BAD_REQUEST);
-        }
-    }
 
     // ========================
     // Helper — Valid Transitions
@@ -567,6 +582,8 @@ public class LoanServiceImpl implements LoanService {
         };
     }
 
+
+    // ── Parse Helpers ─────────────────────────────────────
 
     // ========================
     // Helper — Parse Status
@@ -598,6 +615,9 @@ public class LoanServiceImpl implements LoanService {
                     HttpStatus.BAD_REQUEST);
         }
     }
+
+
+    // ── Common Helpers ────────────────────────────────────
 
     // ========================
     // Helper — Find Loan By ID

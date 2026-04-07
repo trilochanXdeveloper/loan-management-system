@@ -19,10 +19,10 @@ public class LoanRequest {
     private LoanType loanType;
 
     @NotNull(message = "Loan amount is required")
-    @DecimalMin(value = "1000.00",
-            message = "Minimum loan amount is ₹.1,000")
+    @DecimalMin(value = "5000.00",
+            message = "Minimum loan amount is ₹ 5,000")
     @DecimalMax(value = "10000000.00",
-            message = "Maximum loan amount is ₹.1,00,00,000")
+            message = "Maximum loan amount is ₹ 1,00,00,000")
     private BigDecimal loanAmount;
 
     @NotNull(message = "Tenure is required")

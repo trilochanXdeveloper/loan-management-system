@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface LoanService {
 
-    // Customer
+    // ── Customer ──────────────────────────────────────────
     LoanResponse applyLoan(LoanRequest request);
 
     LoanEligibilityResponse checkEligibility(LoanRequest request);
@@ -25,12 +25,12 @@ public interface LoanService {
 
     LoanResponse cancelLoan(Long id);
 
-    // Manager
+    // ── Manager ───────────────────────────────────────────
     List<LoanResponse> getAllLoans(
             String status, String loanType,
             LocalDate from, LocalDate to);
 
-    LoanResponse updateLoanStatus(Long id, String status);
+    LoanResponse forecloseLoan(Long id);
 
     LoanStatsResponse getLoanStats();
 
