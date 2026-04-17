@@ -1,5 +1,7 @@
 package com.loanmanagement.enums;
 
 public enum DecisionType {
-    APPROVED, REJECTED
+    APPROVED,
+    REJECTED,
+    COLLATERAL_REQUIRED
 }

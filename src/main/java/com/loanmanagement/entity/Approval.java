@@ -22,11 +22,11 @@ public class Approval {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "loan_id",nullable = false)
+    @JoinColumn(name = "loan_id", nullable = false)
     private Loan loan;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "approved_by",nullable = false)
+    @JoinColumn(name = "approved_by", nullable = false)
     private User approvedBy;
 
     @Enumerated(EnumType.STRING)
@@ -35,6 +35,12 @@ public class Approval {
 
     @Column(nullable = true)
     private String remarks;
+
+    @Column(name = "sla_deadline")
+    private LocalDateTime slaDeadline;
+
+    @Column(name = "is_auto_approved")
+    private boolean autoApproved = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -1,5 +1,6 @@
 package com.loanmanagement.dto.request;
 
+import com.loanmanagement.enums.RejectionReason;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ApprovalRequest {
 
-    @NotBlank(message = "Remarks are required")
+    private RejectionReason rejectionReason;
+
+    @NotBlank(message = "Remarks is required")
     private String remarks;
 
 }

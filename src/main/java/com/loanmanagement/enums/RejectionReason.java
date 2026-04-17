@@ -1,0 +1,13 @@
+package com.loanmanagement.enums;
+
+public enum RejectionReason {
+    INSUFFICIENT_INCOME,
+    LOW_CREDIT_SCORE,
+    INCOMPLETE_DOCUMENTS,
+    HIGH_EXISTING_DEBT,
+    PROPERTY_VALUATION_ISSUE,
+    BUSINESS_INSTABILITY,
+    AGE_CRITERIA_NOT_MET,
+    INVALID_COLLATERAL,
+    OTHER
+}

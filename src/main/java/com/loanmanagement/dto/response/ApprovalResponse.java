@@ -1,6 +1,7 @@
 package com.loanmanagement.dto.response;
 
 import com.loanmanagement.enums.DecisionType;
+import com.loanmanagement.enums.LoanType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,9 +17,13 @@ public class ApprovalResponse {
 
     private Long id;
     private Long loanId;
-    private String approvedByName;
-    private String approvedByEmail;
+    private LoanType loanType;
+    private String applicantName;
+    private String applicantEmail;
     private DecisionType decision;
     private String remarks;
-    private LocalDateTime createdAt;
+    private String approvedByName;
+    private boolean autoApproved;
+    private LocalDateTime slaDeadline;
+    private LocalDateTime decidedAt;
 }
