@@ -205,7 +205,7 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Transactional(readOnly = true)
     public ApprovalResponse getApprovalByLoanId(Long loanId) {
         Approval approval = approvalRepository
-                .findByLoanId(loanId)
+                .findById(loanId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "No approval found for "
